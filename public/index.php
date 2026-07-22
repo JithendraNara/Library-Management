@@ -173,18 +173,32 @@ function createMemberFromPost(): void
 }
 
 /**
- * Delete a book or member, refusing when it has unreturned loans so the loan
- * history is never silently cascade-deleted. Shared by both delete handlers.
+ * Generic guarded delete: refuse when the item still has active (unreturned)
+ * loans, so the loan history is never silently cascade-deleted.
+ *
+ * $activeCount and $doDelete are zero-arg closures bound to the specific
+ * model, which keeps the call sites short and avoids the "string-heavy
+ * function arguments" pattern CodeScene flagged on callables.
  */
-function deleteGuarded(string $label, callable $activeCount, callable $delete): void
+function guardedDelete(string $label, \Closure $activeCount, \Closure $doDelete): void
 {
     $id = (int)($_POST['id'] ?? 0);
     if ($activeCount($id) > 0) {
         setFlash('error', "Cannot delete: this {$label} has items currently on loan. Return them first.");
         return;
     }
-    $delete($id);
+    $doDelete($id);
     setFlash('success', ucfirst($label) . ' removed.');
+}
+
+/** Thin wrappers — keep handlePost() flat and the call sites readable. */
+function deleteGuardedBook(): void
+{
+    guardedDelete('book', fn(int $id) => Book::activeLoanCount($id), fn(int $id) => Book::delete($id));
+}
+function deleteGuardedMember(): void
+{
+    guardedDelete('member', fn(int $id) => Member::activeLoanCount($id), fn(int $id) => Member::delete($id));
 }
 
 /** POST routes — all state-changing actions (CSRF-checked by the caller). */
@@ -196,7 +210,7 @@ function handlePost(string $path, array $config): void
             redirect('/books');
 
         case '/books/delete':
-            deleteGuarded('book', [Book::class, 'activeLoanCount'], [Book::class, 'delete']);
+            deleteGuardedBook();
             redirect('/books');
 
         case '/members/create':
@@ -204,7 +218,7 @@ function handlePost(string $path, array $config): void
             redirect('/members');
 
         case '/members/delete':
-            deleteGuarded('member', [Member::class, 'activeLoanCount'], [Member::class, 'delete']);
+            deleteGuardedMember();
             redirect('/members');
 
         case '/loans/borrow':
