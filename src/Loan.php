@@ -80,11 +80,14 @@ final class Loan
                 return ['ok' => false, 'message' => 'That book does not exist.'];
             }
 
-            // Find the oldest unreturned loan for this book.
+            // Find the oldest unreturned loan for this book, locking the row so
+            // two concurrent returns can't both claim the same loan and double-
+            // increment available_copies.
             $stmt = $pdo->prepare(
                 'SELECT * FROM loans
                  WHERE book_id = ? AND returned_at IS NULL
-                 ORDER BY borrowed_at ASC LIMIT 1'
+                 ORDER BY borrowed_at ASC LIMIT 1
+                 FOR UPDATE'
             );
             $stmt->execute([$bookId]);
             $loan = $stmt->fetch();

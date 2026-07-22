@@ -172,6 +172,30 @@ function createMemberFromPost(): void
     setFlash('success', "Member “{$name}” added.");
 }
 
+/** Delete a book, refusing if it has unreturned loans (protects loan history). */
+function deleteBookFromPost(): void
+{
+    $id = (int)($_POST['id'] ?? 0);
+    if (Book::activeLoanCount($id) > 0) {
+        setFlash('error', 'Cannot delete: this book has copies currently on loan. Return them first.');
+        return;
+    }
+    Book::delete($id);
+    setFlash('success', 'Book removed.');
+}
+
+/** Delete a member, refusing if they have unreturned loans (protects loan history). */
+function deleteMemberFromPost(): void
+{
+    $id = (int)($_POST['id'] ?? 0);
+    if (Member::activeLoanCount($id) > 0) {
+        setFlash('error', 'Cannot delete: this member has books currently on loan. Return them first.');
+        return;
+    }
+    Member::delete($id);
+    setFlash('success', 'Member removed.');
+}
+
 /** POST routes — all state-changing actions (CSRF-checked by the caller). */
 function handlePost(string $path, array $config): void
 {
@@ -181,8 +205,7 @@ function handlePost(string $path, array $config): void
             redirect('/books');
 
         case '/books/delete':
-            Book::delete((int)($_POST['id'] ?? 0));
-            setFlash('success', 'Book removed.');
+            deleteBookFromPost();
             redirect('/books');
 
         case '/members/create':
@@ -190,8 +213,7 @@ function handlePost(string $path, array $config): void
             redirect('/members');
 
         case '/members/delete':
-            Member::delete((int)($_POST['id'] ?? 0));
-            setFlash('success', 'Member removed.');
+            deleteMemberFromPost();
             redirect('/members');
 
         case '/loans/borrow':

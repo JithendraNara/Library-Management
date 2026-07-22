@@ -36,4 +36,14 @@ final class Member
         $stmt = Database::pdo()->prepare('DELETE FROM members WHERE id = ?');
         $stmt->execute([$id]);
     }
+
+    /** Count unreturned loans for a member (used to block destructive deletes). */
+    public static function activeLoanCount(int $id): int
+    {
+        $stmt = Database::pdo()->prepare(
+            'SELECT COUNT(*) FROM loans WHERE member_id = ? AND returned_at IS NULL'
+        );
+        $stmt->execute([$id]);
+        return (int) $stmt->fetchColumn();
+    }
 }
