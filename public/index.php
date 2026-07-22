@@ -47,10 +47,18 @@ function render(string $view, array $data = [], string $title = 'Central Library
     require __DIR__ . '/../views/layout.php';
 }
 
+/** Start the session exactly once per request (avoids duplicate-start notices). */
+function startSession(): void
+{
+    if (session_status() !== PHP_SESSION_ACTIVE) {
+        session_start();
+    }
+}
+
 /** Pull a flash message set via session, if any. */
 function flash(): ?array
 {
-    session_start();
+    startSession();
     if (isset($_SESSION['flash'])) {
         $f = $_SESSION['flash'];
         unset($_SESSION['flash']);
@@ -61,14 +69,14 @@ function flash(): ?array
 
 function setFlash(string $type, string $message): void
 {
-    session_start();
+    startSession();
     $_SESSION['flash'] = ['type' => $type, 'message' => $message];
 }
 
 /** Get (or lazily create) the per-session CSRF token. */
 function csrfToken(): string
 {
-    session_start();
+    startSession();
     if (empty($_SESSION['csrf'])) {
         $_SESSION['csrf'] = bin2hex(random_bytes(32));
     }
@@ -81,18 +89,24 @@ function csrfField(): string
     return '<input type="hidden" name="csrf" value="' . e(csrfToken()) . '">';
 }
 
+/** True when the submitted token matches the session token. */
+function csrfIsValid(?string $sent): bool
+{
+    return is_string($sent) && $sent !== '' && hash_equals(csrfToken(), $sent);
+}
+
 /**
  * Validate the CSRF token on a POST request.
  * Aborts with 419 if the token is missing or does not match.
  */
 function requireCsrf(): void
 {
-    $sent = $_POST['csrf'] ?? '';
-    if (!is_string($sent) || $sent === '' || !hash_equals(csrfToken(), $sent)) {
-        http_response_code(419);
-        render('error', ['error' => 'Invalid or missing CSRF token. Please go back and retry.'], 'Security check failed');
-        exit;
+    if (csrfIsValid($_POST['csrf'] ?? null)) {
+        return;
     }
+    http_response_code(419);
+    render('error', ['error' => 'Invalid or missing CSRF token. Please go back and retry.'], 'Security check failed');
+    exit;
 }
 
 // --- routing ------------------------------------------------------------
