@@ -16,10 +16,12 @@ require_once __DIR__ . '/../src/Loan.php';
 $CONFIG = require __DIR__ . '/../config.php';
 
 // Harden the session cookie: not readable by JS, only sent over the same
-// site for top-level navigations (SameSite=Lax blocks cross-site POSTs).
+// site for top-level navigations (SameSite=Lax blocks cross-site POSTs),
+// and marked Secure when the request came over HTTPS.
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
+    'secure'   => !empty($_SERVER['HTTPS']),
     'httponly'  => true,
     'samesite' => 'Lax',
 ]);
