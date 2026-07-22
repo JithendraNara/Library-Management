@@ -1,0 +1,6 @@
+# Central Library — Apache front controller
+# Point your vhost DocumentRoot at /public, or use the built-in server instead.
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
