@@ -146,20 +146,36 @@ function handleGet(string $path): void
     }
 }
 
+/** Create a book from POST input, flashing success or a validation error. */
+function createBookFromPost(): void
+{
+    $title  = trim($_POST['title'] ?? '');
+    if ($title === '') {
+        setFlash('error', 'Title is required.');
+        return;
+    }
+    Book::create($title, trim($_POST['author'] ?? ''), max(1, (int)($_POST['copies'] ?? 1)));
+    setFlash('success', "Added “{$title}” to the catalog.");
+}
+
+/** Create a member from POST input, flashing success or a validation error. */
+function createMemberFromPost(): void
+{
+    $name = trim($_POST['name'] ?? '');
+    if ($name === '') {
+        setFlash('error', 'Name is required.');
+        return;
+    }
+    Member::create($name, trim($_POST['email'] ?? ''));
+    setFlash('success', "Member “{$name}” added.");
+}
+
 /** POST routes — all state-changing actions (CSRF-checked by the caller). */
 function handlePost(string $path, array $config): void
 {
     switch ($path) {
         case '/books/create':
-            $title  = trim($_POST['title'] ?? '');
-            $author = trim($_POST['author'] ?? '');
-            $copies = max(1, (int)($_POST['copies'] ?? 1));
-            if ($title === '') {
-                setFlash('error', 'Title is required.');
-            } else {
-                Book::create($title, $author, $copies);
-                setFlash('success', "Added “{$title}” to the catalog.");
-            }
+            createBookFromPost();
             redirect('/books');
 
         case '/books/delete':
@@ -168,14 +184,7 @@ function handlePost(string $path, array $config): void
             redirect('/books');
 
         case '/members/create':
-            $name  = trim($_POST['name'] ?? '');
-            $email = trim($_POST['email'] ?? '');
-            if ($name === '') {
-                setFlash('error', 'Name is required.');
-            } else {
-                Member::create($name, $email);
-                setFlash('success', "Member “{$name}” added.");
-            }
+            createMemberFromPost();
             redirect('/members');
 
         case '/members/delete':
