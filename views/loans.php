@@ -9,6 +9,7 @@ $allMembers = Member::all();
   <div class="card">
     <h2>Borrow a book</h2>
     <form method="post" action="/loans/borrow">
+      <?= csrfField() ?>
       <label>Book
         <select name="book_id" required>
           <option value="">— choose —</option>
@@ -34,6 +35,7 @@ $allMembers = Member::all();
   <div class="card">
     <h2>Return a book</h2>
     <form method="post" action="/loans/return">
+      <?= csrfField() ?>
       <label>Active loan
         <select name="book_id" required>
           <option value="">— choose —</option>

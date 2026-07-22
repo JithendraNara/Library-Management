@@ -23,6 +23,7 @@
         </td>
         <td class="row-actions">
           <form method="post" action="/books/delete" onsubmit="return confirm('Delete this book?')">
+            <?= csrfField() ?>
             <input type="hidden" name="id" value="<?= (int) $b['id'] ?>">
             <button type="submit" class="btn-danger">Delete</button>
           </form>
@@ -37,6 +38,7 @@
 
 <h2>Add a book</h2>
 <form class="card-form" method="post" action="/books/create">
+  <?= csrfField() ?>
   <label>Title <input type="text" name="title" required></label>
   <label>Author <input type="text" name="author" placeholder="Unknown"></label>
   <label>Copies <input type="number" name="copies" value="1" min="1"></label>

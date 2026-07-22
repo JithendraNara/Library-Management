@@ -15,6 +15,15 @@ require_once __DIR__ . '/../src/Loan.php';
 
 $CONFIG = require __DIR__ . '/../config.php';
 
+// Harden the session cookie: not readable by JS, only sent over the same
+// site for top-level navigations (SameSite=Lax blocks cross-site POSTs).
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'httponly'  => true,
+    'samesite' => 'Lax',
+]);
+
 // --- tiny helpers -------------------------------------------------------
 
 function e(?string $v): string
@@ -54,6 +63,36 @@ function setFlash(string $type, string $message): void
 {
     session_start();
     $_SESSION['flash'] = ['type' => $type, 'message' => $message];
+}
+
+/** Get (or lazily create) the per-session CSRF token. */
+function csrfToken(): string
+{
+    session_start();
+    if (empty($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf'];
+}
+
+/** Render a hidden CSRF input for inclusion in every state-changing form. */
+function csrfField(): string
+{
+    return '<input type="hidden" name="csrf" value="' . e(csrfToken()) . '">';
+}
+
+/**
+ * Validate the CSRF token on a POST request.
+ * Aborts with 419 if the token is missing or does not match.
+ */
+function requireCsrf(): void
+{
+    $sent = $_POST['csrf'] ?? '';
+    if (!is_string($sent) || $sent === '' || !hash_equals(csrfToken(), $sent)) {
+        http_response_code(419);
+        render('error', ['error' => 'Invalid or missing CSRF token. Please go back and retry.'], 'Security check failed');
+        exit;
+    }
 }
 
 // --- routing ------------------------------------------------------------
@@ -98,6 +137,7 @@ try {
 
     // POST routes (all state-changing actions)
     if ($method === 'POST') {
+        requireCsrf();
         switch ($path) {
             case '/books/create':
                 $title  = trim($_POST['title'] ?? '');

@@ -94,11 +94,19 @@ final class Loan
                 return ['ok' => false, 'message' => "No active loan found for “{$book['title']}”."];
             }
 
+            // Guard: refuse if every copy is already available, so the counter
+            // can never be inflated past total_copies even with stale loan rows.
+            if ((int) $book['available_copies'] >= (int) $book['total_copies']) {
+                $pdo->rollBack();
+                return ['ok' => false,
+                        'message' => "All copies of “{$book['title']}” are already available — nothing to return."];
+            }
+
             $pdo->prepare('UPDATE loans SET returned_at = NOW() WHERE id = ?')
                 ->execute([$loan['id']]);
 
             $pdo->prepare(
-                'UPDATE books SET available_copies = LEAST(available_copies + 1, total_copies) WHERE id = ?'
+                'UPDATE books SET available_copies = available_copies + 1 WHERE id = ?'
             )->execute([$bookId]);
 
             $pdo->commit();

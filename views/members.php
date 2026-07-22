@@ -12,6 +12,7 @@
         <td><?= e(substr((string) $m['created_at'], 0, 10)) ?></td>
         <td class="row-actions">
           <form method="post" action="/members/delete" onsubmit="return confirm('Remove this member?')">
+            <?= csrfField() ?>
             <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
             <button type="submit" class="btn-danger">Remove</button>
           </form>
@@ -26,6 +27,7 @@
 
 <h2>Add a member</h2>
 <form class="card-form" method="post" action="/members/create">
+  <?= csrfField() ?>
   <label>Name <input type="text" name="name" required></label>
   <label>Email <input type="email" name="email" placeholder="optional"></label>
   <button type="submit">Add member</button>
