@@ -29,11 +29,13 @@ final class Book
     public static function search(string $q): array
     {
         $stmt = Database::pdo()->prepare(
-            'SELECT * FROM books
-             WHERE title LIKE ? OR author LIKE ?
-             ORDER BY title ASC'
+            "SELECT * FROM books
+             WHERE title LIKE ? ESCAPE '\\\\' OR author LIKE ? ESCAPE '\\\\'
+             ORDER BY title ASC"
         );
-        $like = '%' . $q . '%';
+        // Escape LIKE metacharacters so %, _, and \ are matched literally.
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($q));
+        $like = '%' . $escaped . '%';
         $stmt->execute([$like, $like]);
         return $stmt->fetchAll();
     }
